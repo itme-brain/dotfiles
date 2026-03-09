@@ -5,7 +5,11 @@ My portable configs — clone everything or just what you need.
 ## Quick Install
 
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/itme-brain/dotfiles/main/install.sh)
+bash <(curl -s https://raw.githubusercontent.com/itme-brain/dotfiles/main/install)
+```
+OR
+```bash
+./install
 ```
 
 Interactive menu lets you pick which configs to install. Each one is cloned as its own repo — no dependency on this dotfiles repo.
