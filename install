@@ -4,9 +4,24 @@ set -e
 
 REPO_BASE="git@github.com:itme-brain"
 
+is_windows() {
+  [[ "$OS" == "Windows_NT" ]] || [[ "$(uname -s)" =~ MINGW|MSYS|CYGWIN ]]
+}
+
+if is_windows; then
+  APPDATA_LOCAL="$(cmd.exe /C "echo %LOCALAPPDATA%" 2>/dev/null | tr -d '\r')"
+  GIT_TARGET="$HOME/.config/git"
+  VIM_TARGET="$HOME/vimfiles"
+  NVIM_TARGET="$APPDATA_LOCAL/nvim"
+else
+  GIT_TARGET="$HOME/.config/git"
+  VIM_TARGET="$HOME/.vim"
+  NVIM_TARGET="$HOME/.config/nvim"
+fi
+
 names=("git" "vim" "nvim")
 repos=("$REPO_BASE/git.git" "$REPO_BASE/vim.git" "$REPO_BASE/nvim.git")
-targets=("$HOME/.config/git" "$HOME/.vim" "$HOME/.config/nvim")
+targets=("$GIT_TARGET" "$VIM_TARGET" "$NVIM_TARGET")
 selected=()
 
 for i in "${!names[@]}"; do
