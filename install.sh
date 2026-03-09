@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+
+set -e
+
+REPO_BASE="git@github.com:itme-brain"
+
+names=("git" "vim" "nvim")
+repos=("$REPO_BASE/git.git" "$REPO_BASE/vim.git" "$REPO_BASE/nvim.git")
+targets=("$HOME/.config/git" "$HOME/.vim" "$HOME/.config/nvim")
+selected=()
+
+for i in "${!names[@]}"; do
+  selected+=("false")
+done
+
+install_config() {
+  local repo="$1"
+  local dest="$2"
+
+  if [ -e "$dest" ]; then
+    echo "  Backing up existing: $dest -> ${dest}.bak"
+    mv "$dest" "${dest}.bak"
+  fi
+
+  mkdir -p "$(dirname "$dest")"
+  if ! git clone -q "$repo" "$dest" 2>&1; then
+    echo "  Failed to clone $repo"
+    return 1
+  fi
+}
+
+draw_menu() {
+  local cursor="$1"
+
+  if [ "$2" = "redraw" ]; then
+    for _ in "${names[@]}"; do
+      printf "\033[A"
+    done
+    printf "\033[A"
+  fi
+
+  echo "  (↑/↓ navigate, space toggle, enter confirm)"
+  for i in "${!names[@]}"; do
+    local marker=" "
+    if [ "${selected[$i]}" = "true" ]; then
+      marker="x"
+    fi
+
+    if [ "$i" -eq "$cursor" ]; then
+      printf "  \033[1m> [%s] %s\033[0m  ->  %s\n" "$marker" "${names[$i]}" "${targets[$i]}"
+    else
+      printf "    [%s] %s  ->  %s\n" "$marker" "${names[$i]}" "${targets[$i]}"
+    fi
+  done
+}
+
+echo "Select configs to install:"
+
+cursor=0
+draw_menu $cursor "first"
+
+while true; do
+  IFS= read -rsn1 key
+
+  if [ "$key" = $'\x1b' ]; then
+    read -rsn2 rest
+    key="${key}${rest}"
+  fi
+
+  case "$key" in
+    $'\x1b[A' | k)
+      if [ $cursor -gt 0 ]; then
+        cursor=$((cursor - 1))
+      fi
+      ;;
+    $'\x1b[B' | j)
+      if [ $cursor -lt $((${#names[@]} - 1)) ]; then
+        cursor=$((cursor + 1))
+      fi
+      ;;
+    " ")
+      if [ "${selected[$cursor]}" = "true" ]; then
+        selected[$cursor]="false"
+      else
+        selected[$cursor]="true"
+      fi
+      ;;
+    "")
+      break
+      ;;
+  esac
+
+  draw_menu $cursor "redraw"
+done
+
+echo ""
+
+any_selected=false
+for i in "${!names[@]}"; do
+  if [ "${selected[$i]}" = "true" ]; then
+    any_selected=true
+    echo "Installing ${names[$i]}..."
+    install_config "${repos[$i]}" "${targets[$i]}"
+    echo ""
+  fi
+done
+
+if [ "$any_selected" = "false" ]; then
+  echo "Nothing selected."
+fi
+
+echo "Done."
