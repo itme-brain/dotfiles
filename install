@@ -13,15 +13,21 @@ if is_windows; then
   GIT_TARGET="$HOME/.config/git"
   VIM_TARGET="$HOME/vimfiles"
   NVIM_TARGET="$APPDATA_LOCAL/nvim"
+  BASH_TARGET="$HOME/.config/bash"
 else
   GIT_TARGET="$HOME/.config/git"
   VIM_TARGET="$HOME/.vim"
   NVIM_TARGET="$HOME/.config/nvim"
+  BASH_TARGET="$HOME/.config/bash"
 fi
 
-names=("git" "vim" "nvim")
-repos=("$REPO_BASE/git.git" "$REPO_BASE/vim.git" "$REPO_BASE/nvim.git")
-targets=("$GIT_TARGET" "$VIM_TARGET" "$NVIM_TARGET")
+names=("bash" "git" "vim" "nvim")
+targets=("$BASH_TARGET" "$GIT_TARGET" "$VIM_TARGET" "$NVIM_TARGET")
+
+repos=()
+for name in "${names[@]}"; do
+  repos+=("$REPO_BASE/$name.git")
+done
 selected=()
 
 for i in "${!names[@]}"; do
@@ -116,6 +122,19 @@ for i in "${!names[@]}"; do
     any_selected=true
     echo "Installing ${names[$i]}..."
     install_config "${repos[$i]}" "${targets[$i]}"
+
+    # Bash needs ~/.bashrc to source it
+    if [ "${names[$i]}" = "bash" ]; then
+      BASHRC="$HOME/.bashrc"
+      SOURCE_LINE="source ~/.config/bash/bashrc"
+      if [ -f "$BASHRC" ] && grep -qF "$SOURCE_LINE" "$BASHRC"; then
+        echo "  ~/.bashrc already sources config"
+      else
+        echo "$SOURCE_LINE" >> "$BASHRC"
+        echo "  Added source line to ~/.bashrc"
+      fi
+    fi
+
     echo ""
   fi
 done
